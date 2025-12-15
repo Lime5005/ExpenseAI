@@ -20,4 +20,8 @@ public class Expense {
     private String category;
     private double amount;
     private String description;
+
+    public void setId(Long id) {
+        this.id = id;
+    }
 }

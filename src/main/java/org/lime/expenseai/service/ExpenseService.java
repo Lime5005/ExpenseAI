@@ -20,7 +20,8 @@ public class ExpenseService {
     private final ExpenseMapper expenseMapper;
 
     // Constructor for ExpenseService, injecting ExpenseRepository and ExpenseMapper
-    public ExpenseService(ExpenseRepository expenseRepository, ExpenseMapper expenseMapper) {
+    public ExpenseService(ExpenseRepository expenseRepository,
+                          ExpenseMapper expenseMapper) {
         this.expenseRepository = expenseRepository;
         this.expenseMapper = expenseMapper;
     }
@@ -57,4 +58,5 @@ public class ExpenseService {
         Expense updatedExpense = expenseRepository.save(expense);
         return expenseMapper.toDto(updatedExpense);
     }
+
 }
