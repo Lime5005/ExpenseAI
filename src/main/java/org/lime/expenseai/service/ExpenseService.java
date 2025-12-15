@@ -3,6 +3,7 @@ package org.lime.expenseai.service;
 import org.lime.expenseai.entity.Expense;
 import org.lime.expenseai.mapper.ExpenseMapper;
 import org.lime.expenseai.model.ExpenseDto;
+import org.lime.expenseai.model.MonthlySummary;
 import org.lime.expenseai.repository.ExpenseRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -11,6 +12,7 @@ import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 
@@ -74,6 +76,29 @@ public class ExpenseService {
                 newValues.description()
         );
         return updateExpense(match.getId(), dtoWithId);
+    }
+
+    public MonthlySummary buildMonthlySummary(YearMonth month) {
+        List<ExpenseDto> currentMonth = getByMonth(month);
+        double total = currentMonth.stream().mapToDouble(ExpenseDto::amount).sum();
+        Map<String, Double> byCategory = currentMonth.stream()
+                .collect(java.util.stream.Collectors.groupingBy(
+                        ExpenseDto::category,
+                        java.util.stream.Collectors.summingDouble(ExpenseDto::amount)
+                ));
+        int daysInMonth = month.lengthOfMonth();
+        double averageDaily = daysInMonth == 0 ? 0 : total / daysInMonth;
+
+        YearMonth prev = month.minusMonths(1);
+        double prevTotal = getByMonth(prev).stream().mapToDouble(ExpenseDto::amount).sum();
+        double vsLastMonthPercent = prevTotal == 0 ? 0 : ((total - prevTotal) / prevTotal) * 100;
+
+        List<ExpenseDto> topExpenses = currentMonth.stream()
+                .sorted((a, b) -> Double.compare(b.amount(), a.amount()))
+                .limit(3)
+                .toList();
+
+        return new MonthlySummary(month, total, byCategory, averageDaily, vsLastMonthPercent, topExpenses);
     }
 
 }
