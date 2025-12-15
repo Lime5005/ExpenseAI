@@ -9,6 +9,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.util.Comparator;
 import java.util.List;
 
 import static org.springframework.http.HttpStatus.NOT_FOUND;
@@ -57,6 +58,22 @@ public class ExpenseService {
         expense.setId(id);
         Expense updatedExpense = expenseRepository.save(expense);
         return expenseMapper.toDto(updatedExpense);
+    }
+
+    public ExpenseDto updateExpenseByDateAndDescription(LocalDate date, String description, ExpenseDto newValues) {
+        Expense match = expenseRepository.findByDate(date).stream()
+                .filter(e -> e.getDescription() != null && e.getDescription().equalsIgnoreCase(description))
+                .max(Comparator.comparingLong(Expense::getId))
+                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Expense not found for date/description"));
+
+        ExpenseDto dtoWithId = new ExpenseDto(
+                match.getId(),
+                newValues.date(),
+                newValues.category(),
+                newValues.amount(),
+                newValues.description()
+        );
+        return updateExpense(match.getId(), dtoWithId);
     }
 
 }

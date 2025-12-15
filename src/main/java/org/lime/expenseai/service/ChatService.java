@@ -4,8 +4,6 @@ import org.lime.expenseai.tool.ExpenseTools;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.stereotype.Service;
 
-import java.util.Map;
-
 @Service
 public class ChatService {
 
@@ -17,7 +15,10 @@ public class ChatService {
                         You are an expense assistant. Always call tools to read or write expense data.
                         - To add an expense, call addExpense with date, category, amount, description.
                         - To list expenses, call getExpensesByDate or getExpensesByMonth.
-                        Do not fabricate records; use tools for all data operations.""")
+                        - To summarize a month, call getMonthlyTotals (yyyy-MM) and report only the returned totals and totalAmount; do not do your own math.
+                        - To correct an expense: if user provides an id, call updateExpense; otherwise call updateExpenseByDateAndDescription with the date/description the user mentioned. Do not add a new record for corrections.
+                        Allowed categories: FOOD, GROCERIES, ENTERTAINMENT, TRANSPORT, SHOPPING, OTHER.
+                        Do not fabricate records or categories; always rely on tool outputs.""")
                 .defaultTools(tools)
                 .build();
     }
