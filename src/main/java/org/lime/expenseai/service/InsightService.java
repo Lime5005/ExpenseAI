@@ -1,8 +1,16 @@
 package org.lime.expenseai.service;
 
+import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.SpanKind;
+import io.opentelemetry.api.trace.StatusCode;
+import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.context.Scope;
 import org.lime.expenseai.model.Insight;
 import org.lime.expenseai.model.MonthlySummary;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.metadata.Usage;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.stereotype.Service;
 
 import java.time.YearMonth;
@@ -10,6 +18,8 @@ import java.util.Locale;
 
 @Service
 public class InsightService {
+
+    private static final Tracer tracer = GlobalOpenTelemetry.getTracer("org.lime.expenseai");
 
     private final ExpenseService expenseService;
     private final ChatClient chatClient;
@@ -28,18 +38,63 @@ public class InsightService {
     }
 
     public Insight analyze(YearMonth month, String language) {
-        MonthlySummary summary = expenseService.buildMonthlySummary(month);
-        String targetLanguage = normalizeLanguage(language);
-        String prompt = """
-                Analyze this monthly summary and return insights in %s.
-                Summary: %s
-                """.formatted(targetLanguage, summary);
-        String reply = chatClient.prompt()
-                .user(prompt)
-                .call()
-                .content();
-        String content = (reply == null) ? "" : reply.trim();
-        return new Insight(content);
+        Span span = tracer.spanBuilder("insight.analyze").startSpan();
+        try (Scope scope = span.makeCurrent()) {
+            MonthlySummary summary = expenseService.buildMonthlySummary(month);
+            String targetLanguage = normalizeLanguage(language);
+            String prompt = """
+                    Analyze this monthly summary and return insights in %s.
+                    Summary: %s
+                    """.formatted(targetLanguage, summary);
+
+            Span llmSpan = tracer.spanBuilder("llm.chat").setSpanKind(SpanKind.CLIENT).startSpan();
+            String reply;
+            try (Scope llmScope = llmSpan.makeCurrent()) {
+                long startNanos = System.nanoTime();
+                ChatResponse response = chatClient.prompt()
+                        .user(prompt)
+                        .call()
+                        .chatResponse();
+                long latencyNanos = System.nanoTime() - startNanos;
+                llmSpan.setAttribute("llm.latency", latencyNanos / 1_000_000_000d);
+
+                if (response != null && response.getMetadata() != null) {
+                    String model = response.getMetadata().getModel();
+                    if (model != null && !model.isBlank()) {
+                        llmSpan.setAttribute("llm.model", model);
+                    }
+                    Usage usage = response.getMetadata().getUsage();
+                    if (usage != null) {
+                        Integer inputTokens = usage.getPromptTokens();
+                        Integer outputTokens = usage.getCompletionTokens();
+                        if (inputTokens != null) {
+                            llmSpan.setAttribute("llm.input_tokens", inputTokens);
+                        }
+                        if (outputTokens != null) {
+                            llmSpan.setAttribute("llm.output_tokens", outputTokens);
+                        }
+                    }
+                }
+                reply = (response == null || response.getResult() == null)
+                        ? null
+                        : response.getResult().getOutput().getText();
+            } catch (Exception e) {
+                llmSpan.recordException(e);
+                llmSpan.setStatus(StatusCode.ERROR);
+                throw e;
+            } finally {
+                llmSpan.end();
+            }
+
+            String content = (reply == null) ? "" : reply.trim();
+            return new Insight(content);
+        } catch (Exception e) {
+            span.recordException(e);
+            span.setStatus(StatusCode.ERROR);
+            throw e;
+        } finally {
+            span.end();
+        }
     }
 
     private String normalizeLanguage(String language) {

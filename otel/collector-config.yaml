@@ -16,22 +16,23 @@ processors:
     send_batch_size: 512
 
 exporters:
+  otlp/jaeger:
+    endpoint: jaeger:4317
+    tls:
+      insecure: true
   logging:
-    loglevel: info
-  azuremonitor:
-    connection_string: $APPLICATIONINSIGHTS_CONNECTION_STRING
+    verbosity: detailed
+  prometheus:
+    endpoint: 0.0.0.0:9464
 
 service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [memory_limiter, batch]
-      exporters: [logging, azuremonitor]
+      exporters: [otlp/jaeger, logging]
     metrics:
       receivers: [otlp]
-      processors: [memory_limiter, batch]
-      exporters: [logging, azuremonitor]
+      exporters: [prometheus, logging]
     logs:
       receivers: [otlp]
-      processors: [memory_limiter, batch]
-      exporters: [logging, azuremonitor]
+      exporters: [logging]
