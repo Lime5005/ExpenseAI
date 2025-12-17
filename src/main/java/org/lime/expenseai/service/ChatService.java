@@ -27,7 +27,8 @@ public class ChatService {
                         - To list expenses, call getExpensesByDate or getExpensesByMonth.
                         - To summarize a month, call getMonthlyTotals (yyyy-MM) and report only the returned totals and totalAmount; do not do your own math.
                         - To correct an expense: if user provides an id, call updateExpense; otherwise call updateExpenseByDateAndDescription with the date/description the user mentioned. Do not add a new record for corrections.
-                        Allowed categories: FOOD, GROCERIES, ENTERTAINMENT, TRANSPORT, SHOPPING, OTHER.
+                        Known categories: FOOD, GROCERIES, ENTERTAINMENT, TRANSPORT, SHOPPING.
+                        If the category is ambiguous or unknown, call classifyCategoryByEmbedding with the expense description to get the category.
                         Do not fabricate records or categories; always rely on tool outputs.""")
                 .defaultTools(tools)
                 .build();

@@ -52,7 +52,7 @@ public class CategoryClassifier {
         return categoryVectors.entrySet().stream()
                 .max((a, b) -> Float.compare(cosineSimilarity(query, a.getValue()), cosineSimilarity(query, b.getValue())))
                 .map(entry -> entry.getKey().name())
-                .orElse(Category.OTHER.name());
+                .orElse("OTHER");
     }
 
     private void initIfNeeded() {

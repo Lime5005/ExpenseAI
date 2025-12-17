@@ -5,6 +5,5 @@ public enum Category {
     GROCERIES,
     ENTERTAINMENT,
     TRANSPORT,
-    SHOPPING,
-    OTHER
+    SHOPPING
 }

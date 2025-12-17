@@ -24,6 +24,8 @@ exporters:
     verbosity: detailed
   prometheus:
     endpoint: 0.0.0.0:9464
+  azuremonitor:
+    connection_string: ${APPLICATIONINSIGHTS_CONNECTION_STRING}
 
 service:
   pipelines:
@@ -35,4 +37,4 @@ service:
       exporters: [prometheus, logging]
     logs:
       receivers: [otlp]
-      exporters: [logging]
+      exporters: [logging, azuremonitor]

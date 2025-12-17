@@ -78,6 +78,14 @@ public class ExpenseTools {
         return result;
     }
 
+    @Tool(description = "Classify a category using embeddings when the category is ambiguous or unknown")
+    public String classifyCategoryByEmbedding(String description) {
+        String text = (description == null) ? "" : description.trim();
+        String category = categoryClassifier.classify(text);
+        log.info("Tool classifyCategoryByEmbedding called: " + text + " -> " + category);
+        return category;
+    }
+
     private String normalizeCategory(String category, String description) {
         // try enum first
         if (category != null) {

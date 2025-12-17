@@ -12,15 +12,19 @@ services:
       OTEL_TRACES_SAMPLER: always_on
       OTEL_METRICS_EXPORTER: otlp
       OTEL_LOGS_EXPORTER: otlp
+      OTEL_LOG_LEVEL: debug
+      OTEL_INSTRUMENTATION_LOGBACK_APPENDER_ENABLED: "true"
       SPRING_AI_OLLAMA_BASE_URL: http://host.docker.internal:11434
     depends_on:
       - otel-collector
 
   otel-collector:
     image: otel/opentelemetry-collector-contrib:0.102.0
-    command: ["--config=/etc/otelcol/collector-config.yaml"]
+    command: ["--config=/etc/otelcol/collector-config.yml"]
+    environment:
+      APPLICATIONINSIGHTS_CONNECTION_STRING: "${APPLICATIONINSIGHTS_CONNECTION_STRING}"
     volumes:
-      - ./otel/collector-config.yaml:/etc/otelcol/collector-config.yaml:ro
+      - ./otel/collector-config.yml:/etc/otelcol/collector-config.yml:ro
     ports:
       - "4317:4317"
       - "4318:4318"
