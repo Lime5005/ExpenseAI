@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Expense AI</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 2rem; background: #f7f8fa; }
+        h1 { margin-bottom: 0.5rem; }
+        .card { background: #fff; border: 1px solid #e3e5e8; border-radius: 8px; padding: 1rem 1.25rem; box-shadow: 0 4px 14px rgba(0,0,0,0.04); margin-bottom: 1.25rem; }
+        form { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.75rem; margin-bottom: 1.5rem; }
+        label { font-size: 0.9rem; color: #444; }
+        input { width: 100%; padding: 0.4rem 0.5rem; border: 1px solid #ccd1d7; border-radius: 6px; }
+        button { padding: 0.5rem 0.9rem; border: none; border-radius: 6px; background: #2f80ed; color: #fff; cursor: pointer; }
+        button:hover { background: #1f6ed1; }
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        th, td { padding: 0.6rem; border-bottom: 1px solid #e6e8eb; text-align: left; }
+        th { background: #f0f2f5; font-weight: 600; }
+        .insight-output { padding: 0.65rem 0.9rem; border-left: 4px solid #2f80ed; background: linear-gradient(90deg, #eef5ff, #ffffff); border-radius: 6px; font-size: 0.95rem; line-height: 1.45; }
+        .insight-output strong { color: #2f80ed; }
+    </style>
+ </head>
+<body>
+<h1>Expense AI Dashboard</h1>
+<div class="card">
+    <h3>Natural Language Chat</h3>
+    <form id="chat-form">
+        <div style="grid-column: 1 / -1;">
+            <label for="message">Use one sentence to record an expense.（For example: "In July 25th, 2025, I bought a coffee, cost 6.66 euros"）</label>
+            <input type="text" id="message" name="message" required>
+        </div>
+        <div>
+            <label>&nbsp;</label>
+            <button type="submit">Send</button>
+        </div>
+    </form>
+    <p id="chat-reply" style="margin-top:0.75rem; color:#555;"></p>
+</div>
+
+<div class="card">
+    <h3>Expenses by Month</h3>
+    <div id="months-container"></div>
+</div>
+
+<script>
+    function groupByMonth(expenses) {
+        return expenses.reduce((acc, exp) => {
+            const ym = exp.date?.slice(0, 7);
+            if (!acc[ym]) acc[ym] = [];
+            acc[ym].push(exp);
+            return acc;
+        }, {});
+    }
+
+    async function loadExpenses() {
+        const res = await fetch('/expenses');
+        const data = await res.json();
+        const grouped = groupByMonth(data);
+        const container = document.getElementById('months-container');
+        container.innerHTML = '';
+
+        Object.keys(grouped).sort().forEach(ym => {
+            const section = document.createElement('div');
+            section.style.marginBottom = '1.5rem';
+            section.innerHTML = `
+                <div style="display:flex;align-items:center;gap:1rem;margin-bottom:0.5rem;">
+                    <h4 style="margin:0;">${ym}</h4>
+                    <button type="button" data-month="${ym}" class="insight-btn">Check Insight</button>
+                </div>
+                <div class="insight-output" style="margin:0.25rem 0 0.75rem;color:#333;display:none;"></div>
+                <table style="width:100%;border-collapse:collapse;">
+                    <thead>
+                        <tr>
+                            <th style="padding:0.4rem;border-bottom:1px solid #e6e8eb;">ID</th>
+                            <th style="padding:0.4rem;border-bottom:1px solid #e6e8eb;">Date</th>
+                            <th style="padding:0.4rem;border-bottom:1px solid #e6e8eb;">Category</th>
+                            <th style="padding:0.4rem;border-bottom:1px solid #e6e8eb;">Amount</th>
+                            <th style="padding:0.4rem;border-bottom:1px solid #e6e8eb;">Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    ${grouped[ym].map(exp => `
+                        <tr>
+                            <td style="padding:0.4rem;border-bottom:1px solid #f0f2f5;">${exp.id ?? ''}</td>
+                            <td style="padding:0.4rem;border-bottom:1px solid #f0f2f5;">${exp.date}</td>
+                            <td style="padding:0.4rem;border-bottom:1px solid #f0f2f5;">${exp.category}</td>
+                            <td style="padding:0.4rem;border-bottom:1px solid #f0f2f5;">${exp.amount}</td>
+                            <td style="padding:0.4rem;border-bottom:1px solid #f0f2f5;">${exp.description}</td>
+                        </tr>
+                    `).join('')}
+                    </tbody>
+                </table>
+            `;
+            container.appendChild(section);
+        });
+
+        document.querySelectorAll('.insight-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const month = btn.getAttribute('data-month');
+                const output = btn.parentElement?.nextElementSibling;
+                if (!output) return;
+                output.style.display = 'block';
+                output.innerHTML = '<strong>Insight:</strong> Generating...';
+                try {
+                    const res = await fetch(`/insight?month=${month}&lang=en`);
+                    const data = await res.json();
+                    const text = data.explanation || 'No insight available';
+                    output.innerHTML = '<strong>Insight:</strong> ' + formatInsight(text);
+                } catch (err) {
+                    output.innerHTML = '<strong>Insight:</strong> Failed to load';
+                }
+            });
+        });
+    }
+
+    function escapeHtml(value) {
+        return value
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#39;');
+    }
+
+    function formatInsight(value) {
+        return escapeHtml(value).replaceAll('\\n', '<br>');
+    }
+
+    document.getElementById('chat-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const msg = document.getElementById('message').value;
+        const replyEl = document.getElementById('chat-reply');
+        replyEl.textContent = 'Handling the request...';
+        try {
+            const res = await fetch('/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: msg })
+            });
+            const json = await res.json();
+            replyEl.textContent = json.reply || 'Done';
+            await loadExpenses(); // reload table after tool actions
+        } catch (err) {
+            replyEl.textContent = 'Something went wrong, please try again later';
+        }
+    });
+
+    loadExpenses();
+</script>
+</body>
+</html>
