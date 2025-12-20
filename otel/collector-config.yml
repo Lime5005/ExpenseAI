@@ -24,6 +24,8 @@ exporters:
     verbosity: detailed
   prometheus:
     endpoint: 0.0.0.0:9464
+  loki:
+    endpoint: http://loki:3100/loki/api/v1/push
   azuremonitor:
     connection_string: ${APPLICATIONINSIGHTS_CONNECTION_STRING}
 
@@ -31,10 +33,10 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
-      exporters: [otlp/jaeger, logging]
+      exporters: [otlp/jaeger, logging, azuremonitor]
     metrics:
       receivers: [otlp]
-      exporters: [prometheus, logging]
+      exporters: [prometheus, logging, azuremonitor]
     logs:
       receivers: [otlp]
-      exporters: [logging, azuremonitor]
+      exporters: [logging, loki, azuremonitor]
