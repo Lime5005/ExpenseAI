@@ -15,8 +15,24 @@ services:
       OTEL_LOG_LEVEL: debug
       OTEL_INSTRUMENTATION_LOGBACK_APPENDER_ENABLED: "true"
       SPRING_AI_OLLAMA_BASE_URL: http://host.docker.internal:11434
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/expenseai
+      SPRING_DATASOURCE_USERNAME: expenseai
+      SPRING_DATASOURCE_PASSWORD: expenseai
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
     depends_on:
       - otel-collector
+      - postgres
+
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: expenseai
+      POSTGRES_USER: expenseai
+      POSTGRES_PASSWORD: expenseai
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
 
   otel-collector:
     image: otel/opentelemetry-collector-contrib:0.102.0
@@ -61,4 +77,6 @@ services:
       - prometheus
       - loki
 
+volumes:
+  pgdata:
 

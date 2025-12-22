@@ -22,7 +22,8 @@ public class InsightController {
 
     @GetMapping
     public Insight getInsight(@RequestParam @DateTimeFormat(pattern = "yyyy-MM") YearMonth month,
-                              @RequestParam(name = "lang", required = false) String lang) {
-        return insightService.analyze(month, lang);
+                              @RequestParam(name = "lang", required = false) String lang,
+                              @RequestParam(name = "currency", required = false) String currency) {
+        return insightService.analyze(month, lang, currency);
     }
 }

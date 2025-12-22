@@ -17,15 +17,15 @@ processors:
 
 exporters:
   otlp/jaeger:
-    endpoint: jaeger:4317
+    endpoint: jaeger:4317 # Push
     tls:
       insecure: true
   logging:
     verbosity: detailed
   prometheus:
-    endpoint: 0.0.0.0:9464
+    endpoint: 0.0.0.0:9464 # Let pull
   loki:
-    endpoint: http://loki:3100/loki/api/v1/push
+    endpoint: http://loki:3100/loki/api/v1/push # Push
   azuremonitor:
     connection_string: ${APPLICATIONINSIGHTS_CONNECTION_STRING}
 

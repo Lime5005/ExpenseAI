@@ -51,6 +51,14 @@ public class ExpenseService {
         expenseRepository.save(expense);
     }
 
+    public void deleteExpense(Long id) {
+        if (!expenseRepository.existsById(id)) {
+            throw new ResponseStatusException(NOT_FOUND, "Expense not found");
+        } else {
+            expenseRepository.deleteById(id);
+        }
+    }
+
     // Updates an existing expense
     public ExpenseDto updateExpense(Long id, ExpenseDto expenseDto) {
         if (!expenseRepository.existsById(id)) {
@@ -62,20 +70,32 @@ public class ExpenseService {
         return expenseMapper.toDto(updatedExpense);
     }
 
-    public ExpenseDto updateExpenseByDateAndDescription(LocalDate date, String description, ExpenseDto newValues) {
+    public ExpenseDto updateExpensePartial(Long id, LocalDate date, String category, Double amount, String description) {
+        Expense expense = expenseRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Expense not found"));
+        if (date != null) {
+            expense.setDate(date);
+        }
+        if (category != null) {
+            expense.setCategory(category);
+        }
+        if (amount != null) {
+            expense.setAmount(amount);
+        }
+        if (description != null) {
+            expense.setDescription(description);
+        }
+        Expense updatedExpense = expenseRepository.save(expense);
+        return expenseMapper.toDto(updatedExpense);
+    }
+
+    public ExpenseDto updateExpenseByDateAndDescription(LocalDate date, String description, Double amount, String category) {
         Expense match = expenseRepository.findByDate(date).stream()
                 .filter(e -> e.getDescription() != null && e.getDescription().equalsIgnoreCase(description))
                 .max(Comparator.comparingLong(Expense::getId))
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Expense not found for date/description"));
 
-        ExpenseDto dtoWithId = new ExpenseDto(
-                match.getId(),
-                newValues.date(),
-                newValues.category(),
-                newValues.amount(),
-                newValues.description()
-        );
-        return updateExpense(match.getId(), dtoWithId);
+        return updateExpensePartial(match.getId(), date, category, amount, description);
     }
 
     public MonthlySummary buildMonthlySummary(YearMonth month) {

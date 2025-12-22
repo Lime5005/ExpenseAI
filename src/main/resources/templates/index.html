@@ -246,7 +246,10 @@
                 `;
                 try {
                     const lang = getPreferredLanguage();
-                    const res = await fetch(`/insight?month=${month}&lang=${encodeURIComponent(lang)}`);
+                    const currency = getPreferredCurrency();
+                    const params = new URLSearchParams({ month, lang });
+                    if (currency) params.set('currency', currency);
+                    const res = await fetch(`/insight?${params.toString()}`);
                     const data = await res.json();
                     const text = data.explanation || 'No insight available';
                     output.innerHTML = '<strong>Insight:</strong> ' + formatInsight(text);
@@ -271,6 +274,7 @@
     }
 
     const languageState = { last: null };
+    const currencyState = { last: null };
 
     function detectLanguage(text) {
         if (/[\u4E00-\u9FFF]/.test(text)) return 'zh';
@@ -281,6 +285,18 @@
 
     function getPreferredLanguage() {
         return languageState.last || navigator.language || 'en';
+    }
+
+    function detectCurrency(text) {
+        const normalized = text.toLowerCase();
+        if (/\b(eur|euro|euros)\b/.test(normalized)) return 'EUR';
+        if (/\b(usd|dollar|dollars)\b/.test(normalized)) return 'USD';
+        if (/\b(jpy|yen)\b/.test(normalized)) return 'JPY';
+        return null;
+    }
+
+    function getPreferredCurrency() {
+        return currencyState.last;
     }
 
     function appendBubble(text, role) {
@@ -309,6 +325,8 @@
         const msg = input.value.trim();
         if (!msg) return;
         languageState.last = detectLanguage(msg);
+        const detectedCurrency = detectCurrency(msg);
+        if (detectedCurrency) currencyState.last = detectedCurrency;
         appendBubble(msg, 'user');
         input.value = '';
         const typing = appendTyping();

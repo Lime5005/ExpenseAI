@@ -36,6 +36,12 @@ public class ExpenseTools {
         return dto;
     }
 
+    @Tool(description = "Delete an expense item by id")
+    public void deleteExpense(Long id) {
+        log.info("Tool deleteExpense called: " + id);
+        expenseService.deleteExpense(id);
+    }
+
     @Tool(description = "List expenses for a specific date (yyyy-MM-dd)")
     public List<ExpenseDto> getExpensesByDate(String date) {
         log.info("Tool getExpensesByDate called: " + date);
@@ -49,17 +55,15 @@ public class ExpenseTools {
     }
 
     @Tool(description = "Correct an expense by id")
-    public ExpenseDto updateExpense(Long id, LocalDate date, String category, double amount, String description) {
-        String normalizedCategory = normalizeCategory(category, description);
-        ExpenseDto dto = new ExpenseDto(id, date, normalizedCategory, amount, description);
-        return expenseService.updateExpense(id, dto);
+    public ExpenseDto updateExpense(Long id, LocalDate date, String category, Double amount, String description) {
+        String normalizedCategory = (category == null) ? null : normalizeCategory(category, description);
+        return expenseService.updateExpensePartial(id, date, normalizedCategory, amount, description);
     }
 
     @Tool(description = "Correct an expense by matching date and description (uses the most recent match if multiple)")
-    public ExpenseDto updateExpenseByDateAndDescription(LocalDate date, String description, double amount, String category) {
-        String normalizedCategory = normalizeCategory(category, description);
-        ExpenseDto dto = new ExpenseDto(null, date, normalizedCategory, amount, description);
-        ExpenseDto updated = expenseService.updateExpenseByDateAndDescription(date, description, dto);
+    public ExpenseDto updateExpenseByDateAndDescription(LocalDate date, String description, Double amount, String category) {
+        String normalizedCategory = (category == null) ? null : normalizeCategory(category, description);
+        ExpenseDto updated = expenseService.updateExpenseByDateAndDescription(date, description, amount, normalizedCategory);
         log.info("Tool updateExpenseByDateAndDescription called: " + updated);
         return updated;
     }

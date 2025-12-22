@@ -26,10 +26,12 @@ public class ChatService {
                         - To add an expense, call addExpense with date, category, amount, description.
                         - To list expenses, call getExpensesByDate or getExpensesByMonth.
                         - To summarize a month, call getMonthlyTotals (yyyy-MM) and report only the returned totals and totalAmount; do not do your own math.
-                        - To correct an expense: if user provides an id, call updateExpense; otherwise call updateExpenseByDateAndDescription with the date/description the user mentioned. Do not add a new record for corrections.
+                        - To delete an expense, call deleteExpense with id.
+                        - To correct an expense: if user provides an id, call updateExpense; otherwise call updateExpenseByDateAndDescription with the date/description the user mentioned. Only include fields the user provided; do not guess missing amounts.
                         Known categories: FOOD, GROCERIES, ENTERTAINMENT, TRANSPORT, SHOPPING.
                         If the category is ambiguous or unknown, call classifyCategoryByEmbedding with the expense description to get the category.
-                        Do not fabricate records or categories; always rely on tool outputs.""")
+                        Do not fabricate records or categories; always rely on tool outputs.
+                        When presenting totals, use the currency the user mentioned; if none, do not add a currency symbol.""")
                 .defaultTools(tools)
                 .build();
     }

@@ -33,19 +33,22 @@ public class InsightService {
                         - Compare to last month (percentage already provided).
                         - Highlight recurring/periodic patterns if evident.
                         - Give actionable saving suggestions.
-                        Keep it factual, 3-5 sentences max.""")
+                        Keep it factual, 3-5 sentences max.
+                        Do not assume any currency; if a currency is not provided, present amounts without symbols.""")
                 .build();
     }
 
-    public Insight analyze(YearMonth month, String language) {
+    public Insight analyze(YearMonth month, String language, String currency) {
         Span span = tracer.spanBuilder("insight.analyze").startSpan();
         try (Scope scope = span.makeCurrent()) {
             MonthlySummary summary = expenseService.buildMonthlySummary(month);
             String targetLanguage = normalizeLanguage(language);
+            String currencyHint = normalizeCurrency(currency);
             String prompt = """
                     Analyze this monthly summary and return insights in %s.
+                    Currency: %s. If provided, use this currency in amounts and do not use any other currency symbol.
                     Summary: %s
-                    """.formatted(targetLanguage, summary);
+                    """.formatted(targetLanguage, currencyHint, summary);
 
             Span llmSpan = tracer.spanBuilder("llm.chat").setSpanKind(SpanKind.CLIENT).startSpan();
             String reply;
@@ -106,5 +109,12 @@ public class InsightService {
             case "zh", "chinese", "zh-cn", "zh-tw" -> "Chinese";
             default -> "english";
         };
+    }
+
+    private String normalizeCurrency(String currency) {
+        if (currency == null || currency.isBlank()) {
+            return "none";
+        }
+        return currency.trim();
     }
 }

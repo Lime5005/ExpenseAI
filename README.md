@@ -32,6 +32,15 @@ The app container expects Ollama on `host.docker.internal:11434`.
 
 ## Local run (without Docker)
 
+Start PostgreSQL locally (example with Homebrew):
+
+```bash
+brew install postgresql@16
+brew services start postgresql@16
+psql postgres -c "CREATE USER expenseai WITH PASSWORD 'expenseai';"
+psql postgres -c "CREATE DATABASE expenseai OWNER expenseai;"
+```
+
 ```bash
 mvn spring-boot:run
 ```
@@ -57,8 +66,6 @@ Expenses:
 Insights:
 - `GET /insight?month=yyyy-MM&lang=en` — monthly insight (language optional)
 
-H2 console:
-- `GET /h2-console`
 
 ## Observability
 
@@ -100,5 +107,5 @@ The collector will send traces/metrics/logs to Azure Monitor via the `azuremonit
 
 ## Notes
 
-- The app uses H2 by default for simplicity. For production or vector search, consider PostgreSQL + pgvector.
+- The app uses PostgreSQL by default via Docker Compose. Data is persisted in the `pgdata` volume.
 - If Grafana shows no Loki labels/data, ensure the Loki data source uses `http://loki:3100` (not `localhost`).
