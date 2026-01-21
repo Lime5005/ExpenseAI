@@ -336,8 +336,12 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ message: msg })
             });
-            const json = await res.json();
+            const json = await res.json().catch(() => ({}));
             typing.remove();
+            if (!res.ok) {
+                appendBubble(json.message || 'Something went wrong, please try again later', 'ai');
+                return;
+            }
             appendBubble(json.reply || 'Done', 'ai');
             await loadExpenses(); // reload table after tool actions
         } catch (err) {

@@ -6,6 +6,10 @@ import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Scope;
+
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import org.lime.expenseai.tool.ExpenseTools;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.metadata.Usage;
@@ -14,6 +18,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class ChatService {
+    private static final Logger log = Logger.getLogger(ChatService.class.getName());
 
     private static final Tracer tracer = GlobalOpenTelemetry.getTracer("org.lime.expenseai");
 
@@ -65,12 +70,16 @@ public class ChatService {
                 }
             }
 
-            if (response == null || response.getResult() == null) {
-                return "";
+            if (response == null || response.getResult() == null || response.getResult().getOutput() == null) {
+                throw new IllegalStateException("Chat response is empty");
             }
             String text = response.getResult().getOutput().getText();
-            return text == null ? "" : text;
+            if (text == null || text.isBlank()) {
+                throw new IllegalStateException("Chat response text is empty");
+            }
+            return text;
         } catch (Exception e) {
+            log.log(Level.SEVERE, "Chat call failed", e);
             llmSpan.recordException(e);
             llmSpan.setStatus(StatusCode.ERROR);
             throw e;

@@ -7,13 +7,7 @@ receivers:
         endpoint: 0.0.0.0:4318
 
 processors:
-  memory_limiter:
-    check_interval: 1s
-    limit_percentage: 75
-    spike_limit_percentage: 15
   batch:
-    timeout: 1s
-    send_batch_size: 512
 
 exporters:
   otlp/jaeger:
@@ -26,17 +20,25 @@ exporters:
     endpoint: 0.0.0.0:9464 # Let pull
   loki:
     endpoint: http://loki:3100/loki/api/v1/push # Push
-  azuremonitor:
-    connection_string: ${APPLICATIONINSIGHTS_CONNECTION_STRING}
+
+  otlphttp/newrelic:
+    endpoint: "https://otlp.eu01.nr-data.net"
+    headers:
+      api-key: ${NEW_RELIC_API_KEY}
+#  azuremonitor:
+#    connection_string: ${APPLICATIONINSIGHTS_CONNECTION_STRING}
 
 service:
   pipelines:
     traces:
       receivers: [otlp]
-      exporters: [otlp/jaeger, logging, azuremonitor]
+      processors: [batch]
+      exporters: [otlp/jaeger, logging, otlphttp/newrelic]
     metrics:
       receivers: [otlp]
-      exporters: [prometheus, logging, azuremonitor]
+      processors: [batch]
+      exporters: [prometheus, logging, otlphttp/newrelic]
     logs:
       receivers: [otlp]
-      exporters: [logging, loki, azuremonitor]
+      processors: [batch]
+      exporters: [logging, loki, otlphttp/newrelic]

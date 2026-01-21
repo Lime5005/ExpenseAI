@@ -9,7 +9,7 @@ services:
       OTEL_SERVICE_NAME: expense-ai
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
       OTEL_EXPORTER_OTLP_PROTOCOL: grpc
-      OTEL_TRACES_SAMPLER: always_on
+      OTEL_TRACES_EXPORTER: otlp
       OTEL_METRICS_EXPORTER: otlp
       OTEL_LOGS_EXPORTER: otlp
       OTEL_LOG_LEVEL: debug
@@ -38,7 +38,8 @@ services:
     image: otel/opentelemetry-collector-contrib:0.102.0
     command: ["--config=/etc/otelcol/collector-config.yml"]
     environment:
-      APPLICATIONINSIGHTS_CONNECTION_STRING: "${APPLICATIONINSIGHTS_CONNECTION_STRING}"
+#      - APPLICATIONINSIGHTS_CONNECTION_STRING: "${APPLICATIONINSIGHTS_CONNECTION_STRING}"
+      NEW_RELIC_API_KEY: "${NEW_RELIC_API_KEY}"
     volumes:
       - ./otel/collector-config.yml:/etc/otelcol/collector-config.yml:ro
     ports:
@@ -79,4 +80,3 @@ services:
 
 volumes:
   pgdata:
-
